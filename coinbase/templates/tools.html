@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block title %}Tools{% endblock %}
+{% block content %}   
+<div id="page-wrapper">
+    <div class="row">
+        <div class="col-lg-2">         
+            <h4 class="page-header" style="color: #337ab7;"> 
+            <a href="tools.html">Address </a>
+            </h4>
+        </div>     
+        <div class="col-lg-3">         
+            <h4 class="page-header" style="color: #337ab7;"> 
+            <a href="recurring_payments.html"> Recurring Transactions</a>
+
+            </h4>
+        </div> 
+        <div class="col-lg-2">         
+            <h4 class="page-header" style="color: #337ab7;"> 
+            <a href="reports.html"> Reports</a>
+
+            </h4>
+        </div> 
+        <div class="col-lg-2">         
+            <h4 class="page-header" style="color: #337ab7;">
+            <a href="history.html"> History</a>
+            </h4>
+        </div> 
+                          
+    </div>
+    
+    <div class="row">
+        <div class="col-lg-12">
+                <div class="panel-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <select class="form-control" id="wallet_list" name="wallet_list">
+                                    <option selected="selected">Choose a wallet</option>
+                                {% for wls in acc_l %}
+                                    <option value="{{ wls.0 }}">{{ wls.1 }} {{ wls.2 }} - {{ wls.3 }}</option>
+                                {% endfor %} 
+                                </select>
+                            </div>
+                        </div>    
+                    </div>
+                </div>
+           
+        </div>                            
+    </div>                            
+    <div class="row">  
+        <div class="col-lg-12">
+            <table width="100%" class="table table-striped table-bordered table-hover" id="dataTables-addresses"> 
+                <thead>
+                    <tr>
+                        <th>Address</th>
+                        <th>Label</th>
+                        <th>Created</th>
+                        <th class="text-center">
+                            <form name="addForm" action="{% url 'tools' %}" method="POST"> 
+                            {% csrf_token %}
+                                <button value="{{wls|first}}" id="btnwll" name="btnwll" type="submit" class="btn btn-outline btn-primary btn-xs">+ Create Address</button>
+                            </form>  
+                        </th>
+                    </tr>
+                </thead>
+                <tbody id="myT">
+                    {% include 'addresses_tab.html' %}
+                </tbody>
+            </table>
+        </div>
+    </div>        
+</div>
+{% load staticfiles %}
+<script src="{% static 'bootstrap/vendor/jquery/jquery.min.js' %}"></script>
+<script>$('select[name="wallet_list"]').on('change', function() {
+  var sel = $(this).val();
+  $('#btnwll').val(sel);
+  $('#myT').html('').load('get_addresses_for_account', { sel: sel, csrfmiddlewaretoken: '{{ csrf_token }}' });
+});</script>
+{% endblock %}

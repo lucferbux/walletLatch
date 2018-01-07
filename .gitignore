@@ -1,0 +1,5 @@
+
+*.pyc
+*/workspace.html
+\.idea/workspace\.xml
+

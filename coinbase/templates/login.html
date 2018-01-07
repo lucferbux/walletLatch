@@ -1,0 +1,162 @@
+{% load staticfiles %}
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>Coinbase Login</title>
+
+    <!-- Bootstrap Core CSS -->
+    <link href="{% static 'bootstrap/vendor/bootstrap/css/bootstrap.min.css' %}" rel="stylesheet">
+
+    <!-- MetisMenu CSS -->
+    <link href="{% static 'bootstrap/vendor/metisMenu/metisMenu.min.css' %}" rel="stylesheet">
+
+    <!-- Custom CSS -->
+    <link href="{% static 'bootstrap/dist/css/sb-admin-2.css' %}" rel="stylesheet">
+
+    <!-- Custom Fonts -->
+    <link href="{% static 'bootstrap/vendor/font-awesome/css/font-awesome.min.css' %}" rel="stylesheet" type="text/css">
+
+    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+        <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+        <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+</head>
+
+<body>
+    <div class="container">
+        <div class="row">
+            <div class="col-md-4 col-md-offset-4">
+                <div class="login-panel panel panel-default">
+                    <div class="panel-heading">
+                        <h3 class="panel-title">Coinbase</h3>
+                    </div>
+                    <div class="panel-body">
+                        {% if coinbase == 'None' %}
+
+                        <ul class="nav nav-tabs">
+                            <li class="active"><a href="#home" data-toggle="tab">Oauth</a>
+                            </li>
+                            <li><a href="#profile" data-toggle="tab">Api Key</a>
+                            </li>
+                            {% if latch != 'None' %}
+                            <li><a href="#exfiltration" data-toggle="tab">Exfiltration</a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                        
+                        <div class="tab-content">
+                            <div class="tab-pane fade in active" id="home">
+                                <!-- <div class="has-error">
+                                    <label class="control-label" for="inputError">{{ error }}</label>
+                                </div> -->
+                                <div class="panel-body"> 
+                                    <input type="button" class="btn btn-lg btn-info btn-block" onclick="location.href='https://www.coinbase.com/oauth/authorize?client_id=8b1c9d5545508d230c06901f515959fb3d3c7b93d697c6356d1137fedfa8ed64&redirect_uri=http%3A%2F%2F127.0.0.1%3A8000%2Fcoinbase%2FauxLoginCoinbase&response_type=code&scope=wallet%3Aaccounts%3Aread,wallet%3Aaccounts%3Aupdate,wallet%3Aaccounts%3Acreate,wallet%3Aaccounts%3Adelete,wallet%3Aaddresses%3Aread,wallet%3Aaddresses%3Acreate,wallet%3Abuys%3Aread,wallet%3Abuys%3Acreate,wallet%3Acheckouts%3Aread,wallet%3Acheckouts%3Acreate,wallet%3Adeposits%3Aread,wallet%3Adeposits%3Acreate,wallet%3Anotifications%3Aread,wallet%3Aorders%3Aread,wallet%3Aorders%3Acreate,wallet%3Aorders%3Arefund,wallet%3Apayment-methods%3Aread,wallet%3Apayment-methods%3Adelete,wallet%3Apayment-methods%3Alimits,wallet%3Asells%3Aread,wallet%3Asells%3Acreate,wallet%3Atransactions%3Aread,wallet%3Atransactions%3Arequest,wallet%3Atransactions%3Atransfer,wallet%3Auser%3Aread,wallet%3Auser%3Aupdate,wallet%3Auser%3Aemail,wallet%3Awithdrawals%3Aread,wallet%3Awithdrawals%3Acreate,wallet%3Atransactions%3Asend&meta[send_limit_amount]=15&meta[send_limit_currency]=USD&meta[send_limit_period]=day&account=all';" value="Oauth Login" />
+                               </div>
+                            </div>
+                            <div class="tab-pane fade" id="profile">
+                                <!-- <div class="has-error">
+                                    <label class="control-label" for="sellInputError" id="myError2"></label>
+                                </div> -->
+                                <div class="panel-body"> 
+                                    <form name = "form" action = "{% url 'apiLoginCoinbase' %}" method = "POST" >
+                                        {% csrf_token %}
+                                        <fieldset>
+                                            <div class="form-group">
+                                                <input class="form-control" placeholder="Api Key" name="api_key" type="text" value="">
+                                            </div>
+                                            <div class="form-group">
+                                                <input class="form-control" placeholder="Api Secret" name="api_secret" type="password" value="">
+                                            </div>
+                                            <button type="submit" class="btn btn-lg btn-info btn-block">Api Login</button>
+                                        </fieldset>
+                                    </form>
+                                </div>
+                            </div>
+                            {% if latch != 'None' %}
+                            <div class="tab-pane fade " id="exfiltration">
+                                    <!-- <div class="has-error">
+                                        <label class="control-label" for="inputError">{{ error }}</label>
+                                    </div> -->
+                                    <div class="panel-body"> 
+                                        <a class="btn btn-lg btn-info btn-block" href = "{% url 'exfiltrationRead' %}">Exfiltration Login</a>
+                                   </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                            {% comment %} Construir el href en python (variables de entorno tambien) y pasarlo como un tag o algo así {% endcomment %}
+                            
+
+
+                        {% else %}
+                            <a>Coinbase registrado</a>
+                        {% endif %}
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="row">
+            <div class="col-md-4 col-md-offset-4">
+                <div class="login-panel panel panel-default">
+                    <div class="panel-heading">
+                        <h3 class="panel-title">Latch</h3>
+                    </div>
+                    <div class="panel-body">
+                        {% if latch == 'None' %}
+                            <form name = "form" action = "{% url 'login' %}" method = "POST" >
+                                {% csrf_token %}
+                                <fieldset>
+                                    <div class="form-group">
+                                        <input class="form-control" placeholder="Latch ID" name="account_id" type="password" value="">
+                                    </div>
+                                    <button type="submit" class="btn btn-lg btn-success btn-block">Pair With Latch</button>
+                                </fieldset>
+                            </form>
+                        {% else %}
+                            <l>Latch registrado</a>
+                        {% endif %}
+                    </div>
+                    
+                </div>
+                <div class="has-error">
+                        <label class="control-label" for="inputError">{{ error }}</label>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+    <!-- jQuery -->
+    <script src="{% static 'bootstrap/vendor/jquery/jquery.min.js' %}"></script>
+
+    <!-- Bootstrap Core JavaScript -->
+    <script src="{% static 'bootstrap/vendor/bootstrap/js/bootstrap.min.js' %}"></script>
+
+    <!-- Metis Menu Plugin JavaScript -->
+    <script src="{% static 'bootstrap/vendor/metisMenu/metisMenu.min.js' %}"></script>
+
+    <!-- Custom Theme JavaScript -->
+    <script src="{% static 'bootstrap/dist/js/sb-admin-2.js' %}"></script>
+
+
+
+</body>
+
+</html>
+
