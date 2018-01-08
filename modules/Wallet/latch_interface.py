@@ -5,30 +5,49 @@ from Latch.latch import Latch
 import json
 import ast
 import os
-#from models import LatchAccess
+from coinbase.models import LatchAccess
 
 class LatchInterface(object):
+
+    # ------------------------------ PROPERTIES ------------------------------------------
 
     @property
     def account_id(self):
         try:
-            return self._account_id
-            #return LatchAccess.objects.filter(fixed_id=1)[0].account_id
+            account = LatchAccess.objects.filter(fixed_id=1)[0].account_id
+            return account
         except:
             return None
-
+    
     @account_id.setter
     def account_id(self, account_new):
         self._account_id = account_new
+
+    @property
+    def webhookChanges(self):
+        return self._webhookChanges
+    
+    @webhookChanges.setter
+    def webhookChanges(self, webhook_new):
+        self._webhookChanges = webhook_new
+
+    # ------------------------------ INIT ------------------------------------------
+    
+    
 
     def __init__(self, account_id = None):
         self.account_id = account_id
         #self.latch_api = Latch(app_id, app_secret)
         self.latch_app_id = os.environ.get('LATCH_APP', '')
         self.latch_app_secret = os.environ.get('LATCH_SECRET', '')
-        self.latch_api = Latch(self.latch_app_id, self.latch_app_secret) 
+        self.latch_api = Latch(self.latch_app_id, self.latch_app_secret)
+        self.webhookChanges = False
 
 # ------------------------------ LATCH METHODS ------------------------------------------
+
+    def checkAccountId(self):
+        return self.account_id
+    
 
     def parse_response(self, response):
         data = response.get_data()

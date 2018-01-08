@@ -1,0 +1,121 @@
+{% extends "coinbase/base.html" %}
+
+{% block title %}Accounts{% endblock %}
+{% block content %}  
+
+<div id="page-wrapper">
+    <!-- row, title-->
+    <div class="row">
+        <div class="col-lg-6">         
+            <h1 class="page-header" style="color: #337ab7;">Accounts</h1>
+        </div>
+        <div class="col-lg-6">
+            <button type="button" onclick="alert('Go to your coinbase account in order to create a new vault account.')" class="btn btn-default btn-lg page-header pull-left" style="color: #337ab7; margin-bottom:20px; margin-left: 20px; ">+ Create Vault
+            </button>
+            <button type="button" onclick="alert('Hello world!')" class="btn btn-default btn-lg page-header pull-left" style="color: #337ab7; margin-bottom:20px; margin-left: 20px;"><i class="fa fa-exchange fa-fw"></i> Transfer Bitcoins
+            </button>  
+        </div>                  
+    </div>
+    <!-- Información para cargar datos en la tabla. https://datatables.net/examples/data_sources/server_side.html-->
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="panel panel-default">
+                <!-- /.panel-heading -->
+                <div class="panel-body">
+                    <table width="100%" class="table table-striped table-bordered table-hover" id="dataTables-acc">
+                        <thead>
+                            <tr>
+                                <th>Label</th>
+                                <th>Balance</th>
+                                <th>Last Activity</th>
+                                <th>Type (Primary)</th>
+                                <th>Acction</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        {% for d in acc_l %}
+                            <tr class="odd">
+                            {% for v in d %}
+                                    <td name="{{ v }}">{{ v }}</td>                
+                            {% endfor %}       
+                                    <td class="center">
+                                    <div class="btn-group">
+                                        <button type="button" class="btn btn-default btn-xs dropdown-toggle" data-toggle="dropdown">
+                                            Actions
+                                            <span class="caret"></span>
+                                        </button>
+                                        <ul class="dropdown-menu pull-right" role="menu">
+                                            <li><a class="aRename" name="{{ d.0 }}" href="#">Rename Wallet</a>
+                                            </li>
+                                            <li class="divider"></li>
+                                            <li><a class="getTxs" name="{{ d.0 }}" href="">Get Address</a>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                    </td>
+                            </tr>
+                        {% endfor %}                              
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row">  
+        <div class="col-lg-12">
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    Transactions
+                </div>
+                <div class="panel-body">
+                    <table width="100%" class="table table-striped table-bordered table-hover" id="dataTables-txs"> 
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Type</th>
+                                <th>Status</th>
+                                <th>Amount</th>
+                                <th>Currency</th>
+                                <th>Details</th>
+                            </tr>
+                        </thead>
+                        <tbody id="txs_table">
+                            {% include 'coinbase/transactions_tab.html' %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>    
+</div>
+{% load staticfiles %}
+<script src="{% static 'bootstrap/vendor/jquery/jquery.min.js' %}"></script>
+<script>
+$(".getTxs").click(function() {
+    var sel = $(this).prop('name');
+    $('#txs_table').html('').load('get_transactions_for_account', { sel: sel, csrfmiddlewaretoken: '{{ csrf_token }}' });
+});
+
+$(".aRename").click(function() {
+    var sel = $(this).prop('name');
+    //alert($("td[name='"+sel+"']").text());
+    $("td[name='"+sel+"']").replaceWith("<input id='"+sel+"' name='inputChange' class='inputChange' placeholder='"+sel+"'><a class='changeName' href=''>Change</a>");
+});
+
+$("tr").on("click", "a.changeName", function(event) {
+    event.preventDefault();
+    var sel = $('.inputChange').val();
+    var name = $('.inputChange').attr("id");
+ $.ajax({
+    type: 'POST',
+    url: '{% url "change_wallet_name" %}',
+    data: {sel: sel, name: name, csrfmiddlewaretoken: '{{ csrf_token }}'},
+    dataType: 'json',
+    success: function (data) {
+        window.location.href = data.redirect;
+    }
+  });
+});
+
+</script>
+{% endblock %}

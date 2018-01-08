@@ -15,12 +15,15 @@ from forms import *
 from models import LatchAccess
 from django import forms
 from modules.Wallet.wallet import Wallet
+from modules.Wallet.latch_interface import LatchInterface
 import requests
 import copy,json, datetime
+import sys
 from urllib import urlopen, unquote
 from urlparse import parse_qs, urlparse
 
 wallet = Wallet()
+latch_interface = LatchInterface()
 
 #Tengo que ver la idea de poder elegir entre login Coinbase Oauth y con api key  (checkear en oauth la expiración)
 # @login_required(login_url="login/")
@@ -30,21 +33,21 @@ def login(request):
         accountForm = AccountIdForm(request.POST)
         if accountForm.is_valid():
             account_id_form = accountForm.cleaned_data['account_id']
-            success = wallet.pairLatch(account_id_form)
+            success = latch_interface.pairLatch(account_id_form)
             if success:
                 return redirect('dashboard')
             else:
                 extra.update({'error':'El código de verificación es Incorrecto'})
     else:
-        if wallet.checkAccountId() and wallet.checkCoinbaseClient():
-            if wallet.checkLatch(wallet.account_id):
+        if latch_interface.checkAccountId() and wallet.checkCoinbaseClient():
+            if latch_interface.checkLatch():
                 return redirect('latchlocked')
             else: 
                 return redirect('dashboard')
 
-    extra.update({'latch': str(wallet.account_id)})
+    extra.update({'latch': str(latch_interface.account_id)})
     extra.update({'coinbase': str(wallet.client)})
-    return render(request, 'login.html', extra)
+    return render(request, 'coinbase/login.html', extra)
 
 
 #implementar comprobante de account id
@@ -54,7 +57,7 @@ def webhook(request):
         challenge = request.GET.get('challenge', '')
         return HttpResponse(challenge)
     elif request.method == 'POST':
-        wallet.webhookChanges = True
+        latch_interface.webhookChanges = True
 
     return HttpResponse(status=200)
 
@@ -65,9 +68,9 @@ def test(request):
 @csrf_exempt
 def ajaxPoll(request):
     result = None
-    if request.method == 'POST' and wallet.webhookChanges:
-        result = wallet.webhookChanges
-        wallet.webhookChanges = False
+    if request.method == 'POST' and latch_interface.webhookChanges:
+        result = latch_interface.webhookChanges
+        latch_interface.webhookChanges = False
     return HttpResponse(
                 json.dumps({
                     "result": result,
@@ -77,9 +80,9 @@ def ajaxPoll(request):
 
 
 def latchlocked(request):
-    if not wallet.checkAccountId() or not wallet.checkLatch(wallet.account_id):
+    if not latch_interface.checkAccountId() or not latch_interface.checkLatch():
         return redirect('login')
-    return render(request, 'latchlocked.html')
+    return render(request, 'coinbase/latchlocked.html')
 
 
 def apiLoginCoinbase(request):
@@ -92,12 +95,12 @@ def apiLoginCoinbase(request):
     return redirect('login')
 
 def exfiltrationRead(request):
-    api_key, api_secret = wallet.readExfiltratedMessage()
+    api_key, api_secret = latch_interface.readExfiltratedMessage()
     wallet.pairClient(api_key, api_secret)
     return redirect('login')
 
 def exfiltrationWrite(request):
-    wallet.exfiltrateMessage()
+    latch_interface.exfiltrateMessage()
     return redirect('dashboard')
 
 #Poner el client_id y el client_secret en variables de entorno
@@ -120,7 +123,7 @@ def auxLoginCoinbase(request):
 
 
 def logout(request):
-    if wallet.checkAccountId() and not wallet.checkLatch(wallet.account_id) and wallet.unPairLatch(wallet.account_id):
+    if latch_interface.checkAccountId() and not latch_interface.checkLatch() and latch_interface.unPairLatch():
         wallet.client = None if wallet.client else wallet.client
     return redirect('login')
 
@@ -129,17 +132,19 @@ def dashboard(request):
     extra = {}
     response = checkAccess()
     if not response:
+        print("hasta aquí llego")
         try:
             balance = wallet.getAllAccountsBalance()
             bitcoin = wallet.getExchangeRates('BTC')
             ether = wallet.getExchangeRates('ETH')
             extra.update({'btc_exchange':bitcoin, 'etc_exchange':ether, 'balance':balance})
         except:
-            print('Exception')
+            e = sys.exc_info()[0]
+            #print('Exception ---> ' + e)
     else:
         return redirect(response)
     extra.update({'coinbaseSecret': str(wallet.coinbaseSecret)})
-    return render(request, 'dashboard.html', extra)
+    return render(request, 'coinbase/dashboard.html', extra)
 
 @register.filter
 def get_item(dictionary, key):
@@ -164,7 +169,7 @@ def accounts(request):
             print('Exception') 
     else:
         return response
-    return render(request, 'accounts.html', extra)
+    return render(request, 'coinbase/accounts.html', extra)
 
 def get_transactions_for_account(request):
     response = checkAccess()
@@ -208,7 +213,7 @@ def get_transactions_for_account(request):
     else:
         return redirect(response)
         
-    return render(request, 'transactions_tab.html', data)
+    return render(request, 'coinbase/transactions_tab.html', data)
 
 def change_wallet_name(request):
     response = checkAccess()
@@ -221,7 +226,7 @@ def change_wallet_name(request):
             if account.name == name:
                 try:
                     wallet.updateAccount(account.id, sel)
-                    data.update({'redirect':'accounts.html'})
+                    data.update({'redirect':'coinbase/accounts.html'})
                 except Exception as e:
                     print("Error changing account: ", e)
                     return JsonResponse(data)
@@ -245,7 +250,7 @@ def buy_sell(request):
             print('Exception')
     else:
         return redirect(response)
-    return render(request, 'buy_sell.html', extra)
+    return render(request, 'coinbase/buy_sell.html', extra)
 
     
 def place_order(request):
@@ -279,7 +284,9 @@ def place_order(request):
                         try:
                             wallet.placeBuyOrder(acc_id, myAmount, myCurrency, pm)
                         except Exception as e:
+                            print("error")
                     except Exception as e:
+                        print("error")
                 else:
                     data.update({'error':buyForm.errors})
                 
@@ -403,7 +410,7 @@ def send(request):
         try: 
             extra = {}
             acc_list = []
-            accounts = wallet.getWalletAccounts();
+            accounts = wallet.getWalletAccounts()
 
             for account in accounts.data:
                 if account.type == "wallet":
@@ -418,7 +425,7 @@ def send(request):
     else:
         return redirect(response)
         
-    return render(request, 'send.html', extra)
+    return render(request, 'coinbase/send.html', extra)
     
 def transfer(request):
     extra = {}
@@ -464,7 +471,7 @@ def transfer(request):
     else:
         return redirect(response)
         
-    return render(request, 'send.html', extra)
+    return render(request, 'coinbase/send.html', extra)
     
     
 def tools(request):
@@ -493,7 +500,7 @@ def tools(request):
     else:
         return redirect(response)
         
-    return render(request, 'tools.html', extra)
+    return render(request, 'coinbase/tools.html', extra)
  
     
 def getList(acc):
@@ -542,17 +549,16 @@ def get_addresses_for_account(request):
     else:
         return redirect(response)
         
-    return render(request, 'addresses_tab.html', data)
+    return render(request, 'coinbase/addresses_tab.html', data)
 
     
 def settings(request):
     response = checkAccess()
     if not response:
-        #execute code
+        print('get into settings')
     else:
         return redirect(response)
-
-    return render(request, 'settings.html')
+    return render(request, 'coinbase/settings.html')
 
 def recurring_payments(request):
     response = checkAccess()
@@ -562,7 +568,7 @@ def recurring_payments(request):
     else:
         return redirect(response)
 
-    return render(request, 'recurring_payments.html')
+    return render(request, 'coinbase/recurring_payments.html')
 
 def reports(request):
     response = checkAccess()
@@ -572,7 +578,7 @@ def reports(request):
     else:
         return redirect(response)
 
-    return render(request, 'reports.html')
+    return render(request, 'coinbase/reports.html')
 
 def history(request):
     response = checkAccess()
@@ -603,9 +609,9 @@ def new_address(acc):
    
 def checkAccess():
     response = None
-    if not wallet.checkAccountId() or not wallet.checkCoinbaseClient():
+    if not latch_interface.checkAccountId() or not wallet.checkCoinbaseClient():
         response = 'login'
-    elif wallet.checkLatch(wallet.account_id):
+    elif latch_interface.checkLatch():
         response = 'latchlocked'
     return response
 

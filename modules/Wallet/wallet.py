@@ -9,7 +9,8 @@ from pprint import pprint
 import json
 import time
 import binascii
-from middleware import redirect
+from latch_interface import LatchInterface
+
 
 class Wallet(object):
 
@@ -23,14 +24,7 @@ class Wallet(object):
     def client(self, client_new):
         self._client = client_new
     
-    @property
-    def webhookChanges(self):
-        return self._webhookChanges
-    
-    @webhookChanges.setter
-    def webhookChanges(self, webhook_new):
-        self._webhookChanges = webhook_new
-    
+
     @property
     def coinbaseKey(self):
         return self._coinbaseKey
@@ -51,17 +45,11 @@ class Wallet(object):
     # INIT METHODS ----------------------------------------------------------------------
 
     def __init__(self):
-        # self.coinbaseKey = None
-        # self.coinbaseSecret = None
-
-        self.account_id = None
         self.client = None
         self.coinbaseKey = None
         self.coinbaseSecret = None
-        self.webhookChanges = False
-
-    def checkAccountId(self):
-        return self.account_id
+        self.latch = LatchInterface()
+        
 
     def checkCoinbaseClient(self):
         return self.client
@@ -187,7 +175,7 @@ class Wallet(object):
         return rates_list["rates"]["EUR"]        
             
     def getAllAccountsBalance(self):
-        s = ("EUR", "BTC", "ETH", "LTC")
+        s = ("EUR", "BTC", "ETH", "LTC", "BCH")
         accounts = self.getWalletAccounts()
         dic = dict.fromkeys(s,0)
         total = 0.00
