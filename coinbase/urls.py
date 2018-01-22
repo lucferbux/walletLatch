@@ -3,7 +3,6 @@ from . import views
 
 urlpatterns = [
     url(r'^login', views.login, name='login'),
-    url(r'^test', views.test, name='test'),
     url(r'^auxLoginCoinbase', views.auxLoginCoinbase, name='auxLoginCoinbase'),
     url(r'^apiLoginCoinbase', views.apiLoginCoinbase, name='apiLoginCoinbase'),
     url(r'^webhook', views.webhook, name='webhook'),
