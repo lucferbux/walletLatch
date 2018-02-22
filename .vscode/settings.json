@@ -1,3 +1,8 @@
 {
-    "python.pythonPath": "/usr/local/bin/python2.7"
+    "python.pythonPath": "/usr/local/bin/python2.7",
+    "python.linting.enabled": true,
+     "python.linting.pylintEnabled": true,
+     "python.linting.pylintArgs": [
+          "--rcfile=/Users/lucferbux/Documents/Documents Macbook/Proyectos Latch/WalletLatch/walletenv/lib/python2.7/site-packages/pylint/test/regrtest_data/.pylintrc"
+     ]
 }
