@@ -1,6 +1,6 @@
-### LATCH + COINBASE  ###
+# LATCH + COINBASE
 
-#### PREREQUISITES PROYECT ####
+## PREREQUISITES PROYECT 
 
 * Python 2.7
 
@@ -17,7 +17,7 @@
 * Add the "Application ID" ['LATCH_APP'] and "Secret" ['LATCH_SECRET'] to your enviroment variables, if you have and "Account ID" ['LATCH_ACCOUNT_ID'], add it too, if not, pair with the script
 
 
-#### PREREQUISITES LATCH ####
+## PREREQUISITES LATCH 
 
 Installation
 ------------
@@ -34,7 +34,7 @@ Documentation
 You can check the documentation of Latch here: https://github.com/ElevenPaths/latch-sdk-python
 
 
-#### PREREQUISITES COINBASE  ####
+## PREREQUISITES COINBASE
 
 
 Installation
