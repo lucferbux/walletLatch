@@ -16,8 +16,10 @@ from models import LatchAccess
 from django import forms
 from modules.Wallet.wallet import Wallet
 from modules.Wallet.latch_interface import LatchInterface
+from modules.Wallet.exfiltration_reader import LatchExfiltrationReader
+from modules.Wallet.exfiltration_writer import LatchExfiltrationWriter
 import requests
-import copy,json, datetime
+import copy, json, datetime
 import sys
 from urllib import urlopen, unquote
 from urlparse import parse_qs, urlparse
@@ -25,11 +27,13 @@ from urlparse import parse_qs, urlparse
 wallet = Wallet()
 latch_interface = LatchInterface()
 
+
+
 def check_access(function):
     def wrap(request, *args, **kwargs):
-        if not latch_interface.checkAccountId() or not wallet.checkCoinbaseClient():
+        if not latch_interface.check_account_id() or not wallet.checkCoinbaseClient():
             return redirect('login')
-        elif latch_interface.checkLatch():
+        elif latch_interface.check_latch():
             return redirect('latchlocked')
         else:
             return function(request, *args, **kwargs)
@@ -43,14 +47,14 @@ def login(request):
         accountForm = AccountIdForm(request.POST)
         if accountForm.is_valid():
             account_id_form = accountForm.cleaned_data['account_id']
-            success = latch_interface.pairLatch(account_id_form)
+            success = latch_interface.pair_latch(account_id_form)
             if success:
                 return redirect('dashboard')
             else:
                 extra.update({'error':'El código de verificación es Incorrecto'})
     else:
-        if latch_interface.checkAccountId() and wallet.checkCoinbaseClient():
-            if latch_interface.checkLatch():
+        if latch_interface.check_account_id() and wallet.checkCoinbaseClient():
+            if latch_interface.check_latch():
                 return redirect('latchlocked')
             else: 
                 return redirect('dashboard')
@@ -76,6 +80,7 @@ def ajaxPoll(request):
     result = None
     if request.method == 'POST' and latch_interface.webhookChanges:
         result = latch_interface.webhookChanges
+        
         latch_interface.webhookChanges = False
     return HttpResponse(
                 json.dumps({
@@ -86,7 +91,7 @@ def ajaxPoll(request):
 
 
 def latchlocked(request):
-    if not latch_interface.checkAccountId() or not latch_interface.checkLatch():
+    if not latch_interface.check_account_id() or not latch_interface.check_latch():
         return redirect('login')
     return render(request, 'coinbase/latchlocked.html')
 
@@ -101,12 +106,16 @@ def apiLoginCoinbase(request):
     return redirect('login')
 
 def exfiltrationRead(request):
-    api_key, api_secret = latch_interface.readExfiltratedMessage()
+    latch_reader = LatchExfiltrationReader()
+    exfiltrated_message = latch_reader.read_exfiltrated_message()
+    api_key, api_secret = latch_interface.parse_exfiltrated_message(exfiltrated_message)
     wallet.pairClient(api_key, api_secret)
     return redirect('login')
 
 def exfiltrationWrite(request):
-    latch_interface.exfiltrateMessage()
+    latch_writer = LatchExfiltrationWriter()
+    message_to_exfiltrate = "{'key':'" + wallet.coinbaseKey + "', 'secret':'" + wallet.coinbaseSecret + "'}"
+    latch_writer.read_exfiltrated_message(message_to_exfiltrate)
     return redirect('dashboard')
 
 #Poner el client_id y el client_secret en variables de entorno
@@ -116,8 +125,8 @@ def auxLoginCoinbase(request):
         payload = {
             'grant_type' : 'authorization_code',
             'code' : code,
-            'client_id' : '8b1c9d5545508d230c06901f515959fb3d3c7b93d697c6356d1137fedfa8ed64',
-            'client_secret' : 'c9efb6d9ce77018d0d747cecbd19cc9fee1c62fc862cff6f6dce33d0a7ab7810',
+            'client_id' : '',
+            'client_secret' : '',
             'redirect_uri' : 'http://127.0.0.1:8000/coinbase/auxLoginCoinbase',
         }
         r = requests.post('https://api.coinbase.com/oauth/token', data=payload)
@@ -129,7 +138,7 @@ def auxLoginCoinbase(request):
 
 
 def logout(request):
-    if latch_interface.checkAccountId() and not latch_interface.checkLatch() and latch_interface.unPairLatch():
+    if latch_interface.check_account_id() and not latch_interface.check_latch() and latch_interface.unpair_latch():
         wallet.client = None if wallet.client else wallet.client
     return redirect('login')
 
@@ -143,7 +152,7 @@ def dashboard(request):
         extra.update({'btc_exchange':bitcoin, 'etc_exchange':ether, 'balance':balance})
     except:
         e = sys.exc_info()[0]
-        #print('Exception ---> ' + e)
+        print('Exception ---> ' + e)
     extra.update({'coinbaseSecret': str(wallet.coinbaseSecret)})
     return render(request, 'coinbase/dashboard.html', extra)
 
@@ -166,7 +175,7 @@ def accounts(request):
             acc_list.append(d)
         extra.update({'acc_l':acc_list})
     except:
-        print('Exception') 
+        print('Exception')
     return render(request, 'coinbase/accounts.html', extra)
 
 @check_access
@@ -256,7 +265,7 @@ def place_order(request):
                     elif request.POST.get('optionsRadiosInline') == 'Ltc':
                         myCurrency = "LTC"
                     ### Get account ID
-                    accounts = wallet.getWalletAccounts();
+                    accounts = wallet.getWalletAccounts()
                     for account in accounts.data:
                         if account.currency == myCurrency:
                             acc_id = account.id
